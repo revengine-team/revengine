@@ -1,0 +1,7 @@
+class InputEvent
+{
+    public InputEvent()
+    {
+
+    }
+}
