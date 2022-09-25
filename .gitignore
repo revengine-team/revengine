@@ -1,7 +1,2 @@
 target/
-example/
 Cargo.lock
-
-# Added by cargo
-
-/target
