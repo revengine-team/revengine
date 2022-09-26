@@ -1,2 +1,2 @@
-pub mod shaders;
 pub mod buffers;
+pub mod shaders;

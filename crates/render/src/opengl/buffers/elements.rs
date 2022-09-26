@@ -1,10 +1,10 @@
-use super::{Buffer, MapBufferUsage, BufferUsage};
+use super::{Buffer, BufferUsage, MapBufferUsage};
 use gl;
-use std::{mem, ffi::c_void};
+use std::{ffi::c_void, mem};
 
 pub struct ElementsBuffer {
     id: u32,
-    indices_size: usize
+    indices_size: usize,
 }
 
 impl Buffer for ElementsBuffer {
@@ -35,7 +35,7 @@ impl ElementsBuffer {
     pub fn new(indices: &Vec<u32>, usage: BufferUsage) -> ElementsBuffer {
         let mut id: u32 = 0;
         let indices_size = indices.len();
-        
+
         unsafe {
             gl::GenBuffers(1, &mut id);
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, id);
@@ -43,11 +43,14 @@ impl ElementsBuffer {
                 gl::ELEMENT_ARRAY_BUFFER,
                 (indices_size * mem::size_of::<gl::types::GLfloat>()) as gl::types::GLintptr,
                 &indices[0] as *const u32 as *const c_void,
-                ElementsBuffer::map_usage_to_gl_usage(usage)
+                ElementsBuffer::map_usage_to_gl_usage(usage),
             );
         }
 
-        ElementsBuffer { id: id, indices_size }
+        ElementsBuffer {
+            id: id,
+            indices_size,
+        }
     }
 
     pub fn indices_size(&self) -> usize {

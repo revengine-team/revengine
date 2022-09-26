@@ -1,14 +1,14 @@
 pub mod resources;
 
+use gl;
 use std::ffi::CString;
-use std::str;
-use std::ptr;
 use std::io::Error;
 use std::io::ErrorKind;
-use gl;
+use std::ptr;
+use std::str;
 
 pub struct ShaderProgram {
-    id: u32
+    id: u32,
 }
 
 impl ShaderProgram {
@@ -19,8 +19,7 @@ impl ShaderProgram {
         let fragment_id = ShaderProgram::make_shader(gl::FRAGMENT_SHADER, fragment_source)
             .expect("Fragment shader compile error");
 
-        let program_id = ShaderProgram::make(vertex_id, fragment_id)
-            .expect("Program link error");
+        let program_id = ShaderProgram::make(vertex_id, fragment_id).expect("Program link error");
 
         ShaderProgram { id: program_id }
     }
@@ -49,11 +48,19 @@ impl ShaderProgram {
             gl::GetShaderiv(shader_id, gl::COMPILE_STATUS, &mut success);
 
             if success != gl::TRUE as gl::types::GLint {
-                gl::GetShaderInfoLog(shader_id, 1024, ptr::null_mut(), info_log.as_mut_ptr() as *mut gl::types::GLchar);
+                gl::GetShaderInfoLog(
+                    shader_id,
+                    1024,
+                    ptr::null_mut(),
+                    info_log.as_mut_ptr() as *mut gl::types::GLchar,
+                );
 
-                return Err(Error::new(ErrorKind::Other, String::from_utf8_lossy(&info_log)))
+                return Err(Error::new(
+                    ErrorKind::Other,
+                    String::from_utf8_lossy(&info_log),
+                ));
             }
-        }    
+        }
 
         Ok(shader_id)
     }
@@ -64,7 +71,7 @@ impl ShaderProgram {
             gl::AttachShader(id, vertex_shader_id);
             gl::AttachShader(id, fragment_shader_id);
             gl::LinkProgram(id);
-            
+
             gl::DeleteShader(vertex_shader_id);
             gl::DeleteShader(fragment_shader_id);
 
@@ -78,11 +85,19 @@ impl ShaderProgram {
             gl::GetProgramiv(shader_program_id, gl::LINK_STATUS, &mut success);
 
             if success != gl::TRUE as gl::types::GLint {
-                gl::GetShaderInfoLog(shader_program_id, 1024, ptr::null_mut(), info_log.as_mut_ptr() as *mut gl::types::GLchar);
+                gl::GetShaderInfoLog(
+                    shader_program_id,
+                    1024,
+                    ptr::null_mut(),
+                    info_log.as_mut_ptr() as *mut gl::types::GLchar,
+                );
 
-                return Err(Error::new(ErrorKind::Other, String::from_utf8_lossy(&info_log)))
+                return Err(Error::new(
+                    ErrorKind::Other,
+                    String::from_utf8_lossy(&info_log),
+                ));
             }
-        }  
+        }
 
         Ok(shader_program_id)
     }

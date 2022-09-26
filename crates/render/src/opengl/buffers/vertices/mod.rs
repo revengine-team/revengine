@@ -1,15 +1,15 @@
-pub mod vertex;
 pub mod macros;
+pub mod vertex;
 
+use self::vertex::{Vertex, VertexComponent};
+use super::{Buffer, BufferUsage, MapBufferUsage};
 use gl;
 use std::ffi::c_void;
-use super::{Buffer, MapBufferUsage, BufferUsage};
-use self::vertex::{Vertex, VertexComponent};
 
 pub struct VertexBuffer {
     id: u32,
     stride: usize,
-    components: Vec<VertexComponent>
+    components: Vec<VertexComponent>,
 }
 
 impl Buffer for VertexBuffer {
@@ -37,7 +37,10 @@ impl Drop for VertexBuffer {
 impl MapBufferUsage for VertexBuffer {}
 
 impl VertexBuffer {
-    pub fn new<T>(vertices: &Vec<T>, usage: BufferUsage) -> VertexBuffer where T : Vertex {
+    pub fn new<T>(vertices: &Vec<T>, usage: BufferUsage) -> VertexBuffer
+    where
+        T: Vertex,
+    {
         let mut id: u32 = 0;
 
         unsafe {
@@ -47,11 +50,15 @@ impl VertexBuffer {
                 gl::ARRAY_BUFFER,
                 (T::stride() * vertices.len()) as gl::types::GLintptr,
                 &vertices[0] as *const T as *const c_void,
-                VertexBuffer::map_usage_to_gl_usage(usage)
+                VertexBuffer::map_usage_to_gl_usage(usage),
             );
         }
 
-        VertexBuffer { id: id, stride: T::stride() , components: T::components() }
+        VertexBuffer {
+            id: id,
+            stride: T::stride(),
+            components: T::components(),
+        }
     }
 
     pub fn stride(&self) -> usize {

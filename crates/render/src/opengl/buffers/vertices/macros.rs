@@ -1,27 +1,18 @@
 #[macro_export]
 macro_rules! offset_of {
     ($ty:ty, $field:ident) => {
-        unsafe { 
-            &(*(0 as *const $ty)).$field as *const _ as usize
-        }
-    }
+        unsafe { &(*(0 as *const $ty)).$field as *const _ as usize }
+    };
 }
 
 #[macro_export]
 macro_rules! try_map_type_to_gl_type {
     ($ty: ty) => {
         match std::any::type_name::<$ty>() {
-            "f32" => {
-                gl::FLOAT
-            }
-
-            "i32" => {
-                gl::INT
-            }
-
-            _ => {
-                panic!("{} is not supported", std::any::type_name::<$ty>())
-            }
+            "f32" => gl::FLOAT,
+            "i32" => gl::INT,
+            _ => panic!("{} is not supported", std::any::type_name::<$ty>())
+            
         }
     };
 }

@@ -1,12 +1,12 @@
-use std::ffi::c_void;
 use gl;
+use std::ffi::c_void;
 
-use super::{elements::ElementsBuffer, Buffer, vertices::{VertexBuffer}};
+use super::{elements::ElementsBuffer, vertices::VertexBuffer, Buffer};
 
 pub struct BufferArray {
     id: u32,
     vertex_buffer_count: u32,
-    indices_size: usize
+    indices_size: usize,
 }
 
 impl Buffer for BufferArray {
@@ -32,7 +32,10 @@ impl Drop for BufferArray {
 }
 
 impl BufferArray {
-    pub fn create_for(vertex_buffer: &VertexBuffer, elements_buffer: &ElementsBuffer) -> BufferArray {
+    pub fn create_for(
+        vertex_buffer: &VertexBuffer,
+        elements_buffer: &ElementsBuffer,
+    ) -> BufferArray {
         let mut buffer_array = BufferArray::new();
 
         buffer_array.use_elements_buffer(elements_buffer);
@@ -64,12 +67,12 @@ impl BufferArray {
                     component.elements_type() as gl::types::GLuint,
                     gl::FALSE,
                     vertex_buffer.stride() as gl::types::GLint,
-                    component.offset() as *const c_void
+                    component.offset() as *const c_void,
                 );
             }
 
             self.vertex_buffer_count += 1;
-        }   
+        }
     }
 
     fn new() -> BufferArray {
@@ -79,6 +82,10 @@ impl BufferArray {
             gl::GenVertexArrays(1, &mut id);
         }
 
-        BufferArray { id: id, vertex_buffer_count: 0, indices_size: 0 }
+        BufferArray {
+            id: id,
+            vertex_buffer_count: 0,
+            indices_size: 0,
+        }
     }
 }

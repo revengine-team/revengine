@@ -7,12 +7,16 @@ pub trait Vertex {
 pub struct VertexComponent {
     size: usize,
     elements_type: u32,
-    offset: usize
+    offset: usize,
 }
 
 impl VertexComponent {
     pub fn new(size: usize, elements_type: u32, offset: usize) -> VertexComponent {
-        VertexComponent { size: size, elements_type: elements_type, offset: offset }
+        VertexComponent {
+            size: size,
+            elements_type: elements_type,
+            offset: offset,
+        }
     }
 
     pub fn size(&self) -> usize {
