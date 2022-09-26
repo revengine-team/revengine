@@ -13,9 +13,9 @@ pub struct VertexComponent {
 impl VertexComponent {
     pub fn new(size: usize, elements_type: u32, offset: usize) -> VertexComponent {
         VertexComponent {
-            size: size,
-            elements_type: elements_type,
-            offset: offset,
+            size,
+            elements_type,
+            offset,
         }
     }
 

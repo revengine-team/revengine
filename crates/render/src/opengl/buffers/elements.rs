@@ -48,7 +48,7 @@ impl ElementsBuffer {
         }
 
         ElementsBuffer {
-            id: id,
+            id,
             indices_size,
         }
     }

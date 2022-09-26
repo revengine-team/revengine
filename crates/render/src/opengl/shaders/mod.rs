@@ -44,6 +44,7 @@ impl ShaderProgram {
         unsafe {
             let mut success = gl::FALSE as gl::types::GLint;
             let mut info_log = Vec::with_capacity(1024);
+            #[allow(clippy::uninit_vec)]
             info_log.set_len(1023);
             gl::GetShaderiv(shader_id, gl::COMPILE_STATUS, &mut success);
 
@@ -81,6 +82,7 @@ impl ShaderProgram {
         unsafe {
             let mut success = gl::FALSE as gl::types::GLint;
             let mut info_log = Vec::with_capacity(1024);
+            #[allow(clippy::uninit_vec)]
             info_log.set_len(1023);
             gl::GetProgramiv(shader_program_id, gl::LINK_STATUS, &mut success);
 

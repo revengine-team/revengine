@@ -11,8 +11,7 @@ macro_rules! try_map_type_to_gl_type {
         match std::any::type_name::<$ty>() {
             "f32" => gl::FLOAT,
             "i32" => gl::INT,
-            _ => panic!("{} is not supported", std::any::type_name::<$ty>())
-            
+            _ => panic!("{} is not supported", std::any::type_name::<$ty>()),
         }
     };
 }

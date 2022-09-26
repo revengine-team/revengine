@@ -83,7 +83,7 @@ impl BufferArray {
         }
 
         BufferArray {
-            id: id,
+            id,
             vertex_buffer_count: 0,
             indices_size: 0,
         }

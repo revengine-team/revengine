@@ -55,7 +55,7 @@ impl VertexBuffer {
         }
 
         VertexBuffer {
-            id: id,
+            id,
             stride: T::stride(),
             components: T::components(),
         }
