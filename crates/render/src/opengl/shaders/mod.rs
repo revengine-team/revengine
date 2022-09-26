@@ -12,53 +12,23 @@ pub struct ShaderProgram {
 }
 
 impl ShaderProgram {
-    //todo check errors!
     pub fn new(vertex_source: &str, fragment_source: &str) -> ShaderProgram {
-        let maybe_vertex_id = ShaderProgram::make_shader(gl::VERTEX_SHADER, vertex_source);
+        let vertex_id = ShaderProgram::make_shader(gl::VERTEX_SHADER, vertex_source)
+            .expect("Vertex shader compile error");
 
-        #[allow(unused_mut)]
-        let mut vertex_id: u32;
+        let fragment_id = ShaderProgram::make_shader(gl::FRAGMENT_SHADER, fragment_source)
+            .expect("Fragment shader compile error");
 
-        match maybe_vertex_id {
-            Ok(id) => {
-                vertex_id = id;
-            }
+        let program_id = ShaderProgram::make(vertex_id, fragment_id)
+            .expect("Program link error");
 
-            Err(error) => {
-                panic!("Vertex shader error: {:?}", error)
-            }
-        };
-
-        let maybe_fragment_id = ShaderProgram::make_shader(gl::FRAGMENT_SHADER, fragment_source);
-        
-        #[allow(unused_mut)]
-        let mut fragment_id: u32;
-
-        match maybe_fragment_id {
-            Ok(id) => {
-                fragment_id = id;
-            }
-
-            Err(error) => {
-                panic!("Fragment shader error: {:?}", error)
-            }
-        };
-
-        let maybe_program_id = ShaderProgram::make(vertex_id, fragment_id);
-
-        match maybe_program_id {
-            Ok(program_id) => {
-                ShaderProgram { id: program_id }
-            }
-
-            Err(error) => {
-                panic!("Shader program link error: {:?}", error)
-            }
-        }  
+        ShaderProgram { id: program_id }
     }
 
-    pub unsafe fn activate(&self) {
-        gl::UseProgram(self.id);
+    pub fn activate(&self) {
+        unsafe {
+            gl::UseProgram(self.id);
+        }
     }
 
     fn make_shader(shader_type: gl::types::GLenum, shader_source: &str) -> Result<u32, Error> {
@@ -81,7 +51,7 @@ impl ShaderProgram {
             if success != gl::TRUE as gl::types::GLint {
                 gl::GetShaderInfoLog(shader_id, 1024, ptr::null_mut(), info_log.as_mut_ptr() as *mut gl::types::GLchar);
 
-                return Err(Error::new(ErrorKind::Other, str::from_utf8(&info_log).unwrap()))
+                return Err(Error::new(ErrorKind::Other, String::from_utf8_lossy(&info_log)))
             }
         }    
 
@@ -110,7 +80,7 @@ impl ShaderProgram {
             if success != gl::TRUE as gl::types::GLint {
                 gl::GetShaderInfoLog(shader_program_id, 1024, ptr::null_mut(), info_log.as_mut_ptr() as *mut gl::types::GLchar);
 
-                return Err(Error::new(ErrorKind::Other, str::from_utf8(&info_log).unwrap()))
+                return Err(Error::new(ErrorKind::Other, String::from_utf8_lossy(&info_log)))
             }
         }  
 
