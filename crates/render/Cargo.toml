@@ -8,6 +8,10 @@ edition = "2021"
 [dependencies]
 glfw = "0.45.0"
 gl = "0.14.0"
+wgpu = { version = "0.13", optional = true }
+bytemuck = { version = "1.12", features = ["derive"], optional = true }
+image = { version = "0.24", optional = true }
 
 [features]
 wayland = ["glfw/wayland"]
+wgpu = ["dep:wgpu", "dep:bytemuck", "dep:image"]

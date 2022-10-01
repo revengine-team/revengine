@@ -47,10 +47,7 @@ impl ElementsBuffer {
             );
         }
 
-        ElementsBuffer {
-            id,
-            indices_size,
-        }
+        ElementsBuffer { id, indices_size }
     }
 
     pub fn indices_size(&self) -> usize {
