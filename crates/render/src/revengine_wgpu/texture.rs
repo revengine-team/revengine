@@ -1,3 +1,6 @@
+//!
+//! Module to ease work with textures
+//! 
 use std::num::NonZeroU32;
 
 use image::DynamicImage;
@@ -5,14 +8,23 @@ use wgpu::Extent3d;
 
 /// Represents an image that has been uploaded to the GPU.
 pub struct Texture {
+    /// Texture on the GPU
     pub tex: wgpu::Texture,
+    /// Metadata for texture
     pub view: wgpu::TextureView,
+    /// Sampler is, in a very simplified way, a description to shader how to work with texture
     pub sampler: wgpu::Sampler,
     _size: Extent3d,
     _format: wgpu::TextureFormat,
 }
 
 impl Texture {
+    /// Creates a new [`Texture`].
+    ///
+    /// # Panics
+    ///
+    /// Panics if used with unsupported formats.
+    /// (Curently supports Rgba8 and Luma8)
     pub fn new(
         device: &wgpu::Device,
         queue: &wgpu::Queue,

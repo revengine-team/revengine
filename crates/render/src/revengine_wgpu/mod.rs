@@ -5,7 +5,11 @@ pub mod render_pipleine_builder;
 pub mod renderer;
 pub mod texture;
 
+
 pub mod prelude {
+
+    //! Convinient re-export of common members
+     
     pub use super::bind_group_builder::{Builder as BindGroupBuilder, LayoutBuilder};
     pub use super::buffers::{
         uniform::{UniformBuffer, UniformObject},

@@ -1,3 +1,6 @@
+//! 
+//! Builders to create render passes
+//! 
 use wgpu::{Color, LoadOp};
 
 /// A builder type to simplify the process of creating a render pass descriptor.

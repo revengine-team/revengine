@@ -1,3 +1,6 @@
+//! 
+//! Builders to create render pipeline layout.
+//! 
 use std::num::NonZeroU32;
 
 #[derive(Debug)]
@@ -12,6 +15,15 @@ pub trait IntoPipelineLayoutDescriptor<'a> {
     fn into_pipeline_layout_descriptor(self) -> wgpu::PipelineLayoutDescriptor<'a>;
 }
 
+/// Render pipeline builder is here to ease struggles while creating pipeline.
+/// 
+/// Examples
+/// ```
+/// let pipeline = RenderPipelineBuilder::from_layout(&pipeline_layout, &v_shader)
+///            .add_vertex_buffer_layout(Vertex::desc())
+///            .fragment_shader(&f_shader)
+///            .build(device, Some("Example pipeline"));
+/// ```
 #[derive(Debug)]
 pub struct RenderPipelineBuilder<'a> {
     layout: Layout<'a>,
@@ -251,6 +263,7 @@ impl<'a> RenderPipelineBuilder<'a> {
         self
     }
 
+    /// Enables/disables writes of depth.
     pub fn depth_write_enabled(mut self, enabled: bool) -> Self {
         let state = self
             .depth_stencil
