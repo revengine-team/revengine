@@ -1,7 +1,7 @@
 //!
 //! Module to ease work with uniforms
 //! 
-use crate::revengine_wgpu::bind_group_builder;
+use crate::bind_group_builder;
 use wgpu::util::DeviceExt;
 
 // TODO: this is rarely used 

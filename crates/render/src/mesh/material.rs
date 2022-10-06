@@ -1,10 +1,10 @@
-use bytemuck::{Pod, Zeroable};
+
 use wgpu::{
     Color, LoadOp, PipelineLayout, RenderPassColorAttachment, RenderPassDescriptor, RenderPipeline,
 };
 
-use super::{GpuMesh, Mesh};
-use crate::revengine_wgpu::prelude::*;
+use super::GpuMesh;
+use crate::prelude::*;
 
 pub struct ObjectGpu {
     meshes: Vec<GpuMesh>,
@@ -12,7 +12,7 @@ pub struct ObjectGpu {
 }
 
 impl Renderable for ObjectGpu {
-    fn update(&mut self, context: &mut RenderingContext) {}
+    fn update(&mut self, _context: &mut RenderingContext) {}
 
     fn render(&mut self, context: &mut RenderingContext) {
         let mut encoder = context.create_encoder("Base obj encoder");
@@ -153,7 +153,7 @@ impl AsPipeline for BaseMaterial {
     fn pipeline(&self, device: &wgpu::Device, layout: &PipelineLayout) -> RenderPipeline {
         let v_shader = Shader::load(
             device,
-            "./crates/render/src/revengine_wgpu/mesh/assets/shaders/base_material_vertex.wgsl",
+            "./crates/render/src/mesh/assets/shaders/base_material_vertex.wgsl",
             wgpu::ShaderStages::VERTEX,
             Some("BaseMaterial vertex shader"),
         )
@@ -161,7 +161,7 @@ impl AsPipeline for BaseMaterial {
 
         let f_shader = Shader::load(
             device,
-            "./crates/render/src/revengine_wgpu/mesh/assets/shaders/base_material_fragment.wgsl",
+            "./crates/render/src/mesh/assets/shaders/base_material_fragment.wgsl",
             wgpu::ShaderStages::FRAGMENT,
             Some("BaseMaterial fragment shader"),
         )
@@ -196,7 +196,7 @@ impl AsMaterial for BaseMaterial {
 impl Material for BaseMaterialGpu {
     fn begin_render_pass<'a>(
         &'a self,
-        device: &wgpu::Device,
+        _device: &wgpu::Device,
         encoder: &'a mut wgpu::CommandEncoder,
         rp_desc: &'a wgpu::RenderPassDescriptor,
         // transform_data: &TransformBindGroup,

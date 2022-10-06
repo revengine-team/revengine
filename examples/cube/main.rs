@@ -1,5 +1,3 @@
-use std::borrow::Cow;
-
 use bytemuck::{Pod, Zeroable};
 use winit::{
     event::{Event, WindowEvent},
@@ -7,7 +5,7 @@ use winit::{
     window::Window,
 };
 
-use render::revengine_wgpu::{prelude::*, mesh::material::{ObjectGpu, AsMaterial}};
+use render::{prelude::*, mesh::material::{ObjectGpu, AsMaterial}};
 
 #[repr(C)]
 #[derive(Copy, Clone, Zeroable, Pod)]
@@ -138,13 +136,13 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
     let anime =  verticies.iter().map( |x| {
         let MeshVertex{
             mut position,
-            mut texcoords,
-            mut normal,
+            texcoords,
+            normal,
         } = x;
 
         position[1] += 4.0;
 
-        MeshVertex{ position, texcoords, normal }
+        MeshVertex{ position, texcoords: *texcoords, normal: *normal }
         
     }).collect();
 

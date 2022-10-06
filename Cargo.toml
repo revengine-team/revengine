@@ -17,7 +17,3 @@ pollster = "0.2.5"
 image = "0.24"
 bytemuck = { version = "1.12", features = ["derive"] }
 wgpu = "0.13"
-
-[features]
-wayland = ["render/wayland"]
-wgpu = ["render/wgpu"]
