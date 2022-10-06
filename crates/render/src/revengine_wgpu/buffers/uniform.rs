@@ -4,11 +4,12 @@
 use crate::revengine_wgpu::bind_group_builder;
 use wgpu::util::DeviceExt;
 
+// TODO: this is rarely used 
 /// Wrapper around Buffer to store Uniform. 
 pub struct UniformBuffer<T> {
     buffer: wgpu::Buffer,
-    bind_group_layout: wgpu::BindGroupLayout,
-    bind_group: wgpu::BindGroup,
+    pub bind_group_layout: wgpu::BindGroupLayout,
+    pub bind_group: wgpu::BindGroup,
     phantom: std::marker::PhantomData<T>,
 }
 
@@ -95,21 +96,7 @@ where
     }
 }
 
-/// Trait for describing new objects that were bound in shader
-pub trait UniformObject {
-    /// Get uniforms BindGroup
-    fn get_bind_group(&self) -> &wgpu::BindGroup;
-
-    /// Get uniforms BindGroup layout
-    fn get_layout(&self) -> &wgpu::BindGroupLayout;
-}
-
-impl<T> UniformObject for UniformBuffer<T> {
-    fn get_bind_group(&self) -> &wgpu::BindGroup {
-        &self.bind_group
-    }
-
-    fn get_layout(&self) -> &wgpu::BindGroupLayout {
-        &self.bind_group_layout
-    }
+pub trait AsBindGroup {
+    fn bind_group(&self, device: &wgpu::Device, layout: &wgpu::BindGroupLayout) -> wgpu::BindGroup;
+    fn bind_group_layout(device: &wgpu::Device) -> wgpu::BindGroupLayout;
 }

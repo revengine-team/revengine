@@ -7,88 +7,7 @@ use winit::{
     window::Window,
 };
 
-use render::revengine_wgpu::prelude::*;
-
-#[repr(C)]
-#[derive(Clone, Copy, Pod, Zeroable)]
-struct Vertex {
-    _pos: [f32; 4],
-    _tex_coord: [f32; 2],
-}
-
-impl VertexDesc for Vertex {
-    fn desc<'a>() -> wgpu::VertexBufferLayout<'a> {
-        wgpu::VertexBufferLayout {
-            array_stride: std::mem::size_of::<Vertex>() as wgpu::BufferAddress,
-            step_mode: wgpu::VertexStepMode::Vertex,
-            attributes: &[
-                wgpu::VertexAttribute {
-                    format: wgpu::VertexFormat::Float32x4,
-                    offset: 0,
-                    shader_location: 0,
-                },
-                wgpu::VertexAttribute {
-                    format: wgpu::VertexFormat::Float32x2,
-                    offset: 4 * 4,
-                    shader_location: 1,
-                },
-            ],
-        }
-    }
-}
-
-fn vertex(pos: [i8; 3], tc: [i8; 2]) -> Vertex {
-    Vertex {
-        _pos: [pos[0] as f32, pos[1] as f32, pos[2] as f32, 1.0],
-        _tex_coord: [tc[0] as f32, tc[1] as f32],
-    }
-}
-
-fn create_vertices() -> (Vec<Vertex>, Vec<u16>) {
-    let vertex_data = [
-        // top (0, 0, 1)
-        vertex([-1, -1, 1], [0, 0]),
-        vertex([1, -1, 1], [1, 0]),
-        vertex([1, 1, 1], [1, 1]),
-        vertex([-1, 1, 1], [0, 1]),
-        // bottom (0, 0, -1)
-        vertex([-1, 1, -1], [1, 0]),
-        vertex([1, 1, -1], [0, 0]),
-        vertex([1, -1, -1], [0, 1]),
-        vertex([-1, -1, -1], [1, 1]),
-        // right (1, 0, 0)
-        vertex([1, -1, -1], [0, 0]),
-        vertex([1, 1, -1], [1, 0]),
-        vertex([1, 1, 1], [1, 1]),
-        vertex([1, -1, 1], [0, 1]),
-        // left (-1, 0, 0)
-        vertex([-1, -1, 1], [1, 0]),
-        vertex([-1, 1, 1], [0, 0]),
-        vertex([-1, 1, -1], [0, 1]),
-        vertex([-1, -1, -1], [1, 1]),
-        // front (0, 1, 0)
-        vertex([1, 1, -1], [1, 0]),
-        vertex([-1, 1, -1], [0, 0]),
-        vertex([-1, 1, 1], [0, 1]),
-        vertex([1, 1, 1], [1, 1]),
-        // back (0, -1, 0)
-        vertex([1, -1, 1], [0, 0]),
-        vertex([-1, -1, 1], [1, 0]),
-        vertex([-1, -1, -1], [1, 1]),
-        vertex([1, -1, -1], [0, 1]),
-    ];
-
-    let index_data: &[u16] = &[
-        0, 1, 2, 2, 3, 0, // top
-        4, 5, 6, 6, 7, 4, // bottom
-        8, 9, 10, 10, 11, 8, // right
-        12, 13, 14, 14, 15, 12, // left
-        16, 17, 18, 18, 19, 16, // front
-        20, 21, 22, 22, 23, 20, // back
-    ];
-
-    (vertex_data.to_vec(), index_data.to_vec())
-}
+use render::revengine_wgpu::{prelude::*, mesh::material::{ObjectGpu, AsMaterial}};
 
 #[repr(C)]
 #[derive(Copy, Clone, Zeroable, Pod)]
@@ -116,109 +35,6 @@ const MX_REF: Mat4x4 = Mat4x4 {
         6.0207977,
     ],
 };
-
-struct CubeObj {
-    pipeline: wgpu::RenderPipeline,
-    bind_group: wgpu::BindGroup,
-    uniforms: UniformBuffer<Mat4x4>,
-    vertex_buffer: VertexBuffer<Vertex>,
-    index_buffer: Buffer<u16>,
-}
-
-impl CubeObj {
-    fn new(device: &wgpu::Device, queue: &wgpu::Queue) -> Self {
-        let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: None,
-            source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("shader.wgsl"))),
-        });
-
-        let (vertex_data, index_data) = create_vertices();
-
-        let vertex_buf = VertexBuffer::new(device, &vertex_data, Some("Vertex buffer"));
-
-        let index_buf = Buffer::new(
-            device,
-            wgpu::BufferUsages::INDEX,
-            &index_data,
-            Some("Index buffer"),
-        );
-
-        let diffuse_bytes = include_bytes!("logo.png");
-        let diffuse_image = image::load_from_memory(diffuse_bytes).unwrap();
-
-        let texture = Texture::new(device, queue, &diffuse_image, None, None);
-
-        let bind_group_layout = LayoutBuilder::new()
-            .texture(
-                wgpu::ShaderStages::FRAGMENT,
-                false,
-                wgpu::TextureViewDimension::D2,
-                wgpu::TextureSampleType::Float { filterable: true },
-            )
-            .filtering_sampler(wgpu::ShaderStages::FRAGMENT)
-            .build(&device, Some("Amogus texture"));
-
-        let uniform_buf =
-            UniformBuffer::init(device, MX_REF, wgpu::ShaderStages::VERTEX, "Camera matrix");
-
-        let bind_group = BindGroupBuilder::new()
-            .texture_view(&texture.view)
-            .sampler(&texture.sampler)
-            .build(&device, &bind_group_layout, Some("Cube bind group"));
-
-        let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: Some("Cube layout"),
-            bind_group_layouts: &[&bind_group_layout, &uniform_buf.get_layout()],
-            push_constant_ranges: &[],
-        });
-
-        let pipeline = RenderPipelineBuilder::from_layout(&pipeline_layout, &shader)
-            .color_format(wgpu::TextureFormat::Bgra8UnormSrgb)
-            .add_vertex_buffer_layout(Vertex::desc())
-            .fragment_shader(&shader)
-            .cull_mode(Some(wgpu::Face::Back))
-            .multisample(wgpu::MultisampleState::default())
-            .build(&device, Some("Cube pipeline"));
-
-        Self {
-            pipeline,
-            bind_group,
-            uniforms: uniform_buf,
-            vertex_buffer: vertex_buf,
-            index_buffer: index_buf,
-        }
-    }
-}
-
-impl Renderable for CubeObj {
-    fn update(&mut self, context: &mut RenderingContext) {
-        self.uniforms.copy_to_gpu(context.queue, &MX_REF);
-    }
-
-    fn render(&mut self, context: &mut RenderingContext) {
-        let mut encoder = context.create_encoder("Cube Encoder");
-
-        {
-            let mut rend_pass = RenderPassBuilder::new()
-                .color_attachment(context.output, |col_builer| {
-                    col_builer
-                        .load_op(wgpu::LoadOp::Clear(wgpu::Color::BLUE))
-                        .store_op(true)
-                })
-                .begin(&mut encoder);
-
-            rend_pass.set_pipeline(&self.pipeline);
-            rend_pass.set_bind_group(0, &self.bind_group, &[]);
-            rend_pass.set_bind_group(1, &self.uniforms.get_bind_group(), &[]);
-            rend_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
-            rend_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
-            rend_pass.draw_indexed(0..36, 0, 0..1);
-            // rend_pass.draw(0..VERTICES.len() as u32, 0..1);
-        }
-
-        context.submit(encoder);
-    }
-}
 
 async fn run(event_loop: EventLoop<()>, window: Window) {
     let size = window.inner_size();
@@ -262,7 +78,94 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
 
     surface.configure(&device, &config);
 
-    let mut cube = CubeObj::new(&device, &queue);
+    struct Kek {
+        min_x: f32,
+        max_x: f32,
+        min_y: f32,
+        max_y: f32,
+        min_z: f32,
+        max_z: f32,
+    }
+
+    let sp = Kek {
+        min_x: -1.0,
+        max_x: 1.0,
+        min_y: -1.0,
+        max_y: 1.0,
+        min_z: -1.0,
+        max_z: 1.0,
+    };
+
+    let a = &[
+        // Top
+        ([sp.min_x, sp.min_y, sp.max_z], [0., 0., 1.0], [0., 0.]),
+        ([sp.max_x, sp.min_y, sp.max_z], [0., 0., 1.0], [1.0, 0.]),
+        ([sp.max_x, sp.max_y, sp.max_z], [0., 0., 1.0], [1.0, 1.0]),
+        ([sp.min_x, sp.max_y, sp.max_z], [0., 0., 1.0], [0., 1.0]),
+        // Bottom
+        ([sp.min_x, sp.max_y, sp.min_z], [0., 0., -1.0], [1.0, 0.]),
+        ([sp.max_x, sp.max_y, sp.min_z], [0., 0., -1.0], [0., 0.]),
+        ([sp.max_x, sp.min_y, sp.min_z], [0., 0., -1.0], [0., 1.0]),
+        ([sp.min_x, sp.min_y, sp.min_z], [0., 0., -1.0], [1.0, 1.0]),
+        // Right
+        ([sp.max_x, sp.min_y, sp.min_z], [1.0, 0., 0.], [0., 0.]),
+        ([sp.max_x, sp.max_y, sp.min_z], [1.0, 0., 0.], [1.0, 0.]),
+        ([sp.max_x, sp.max_y, sp.max_z], [1.0, 0., 0.], [1.0, 1.0]),
+        ([sp.max_x, sp.min_y, sp.max_z], [1.0, 0., 0.], [0., 1.0]),
+        // Left
+        ([sp.min_x, sp.min_y, sp.max_z], [-1.0, 0., 0.], [1.0, 0.]),
+        ([sp.min_x, sp.max_y, sp.max_z], [-1.0, 0., 0.], [0., 0.]),
+        ([sp.min_x, sp.max_y, sp.min_z], [-1.0, 0., 0.], [0., 1.0]),
+        ([sp.min_x, sp.min_y, sp.min_z], [-1.0, 0., 0.], [1.0, 1.0]),
+        // Front
+        ([sp.max_x, sp.max_y, sp.min_z], [0., 1.0, 0.], [1.0, 0.]),
+        ([sp.min_x, sp.max_y, sp.min_z], [0., 1.0, 0.], [0., 0.]),
+        ([sp.min_x, sp.max_y, sp.max_z], [0., 1.0, 0.], [0., 1.0]),
+        ([sp.max_x, sp.max_y, sp.max_z], [0., 1.0, 0.], [1.0, 1.0]),
+        // Back
+        ([sp.max_x, sp.min_y, sp.max_z], [0., -1.0, 0.], [0., 0.]),
+        ([sp.min_x, sp.min_y, sp.max_z], [0., -1.0, 0.], [1.0, 0.]),
+        ([sp.min_x, sp.min_y, sp.min_z], [0., -1.0, 0.], [1.0, 1.0]),
+        ([sp.max_x, sp.min_y, sp.min_z], [0., -1.0, 0.], [0., 1.0]),
+    ];
+
+    let verticies = a.iter().map(|x| MeshVertex {
+        position: x.0,
+        texcoords: x.2,
+        normal: x.1,
+    }).collect::<Vec<MeshVertex>>();
+
+    let anime =  verticies.iter().map( |x| {
+        let MeshVertex{
+            mut position,
+            mut texcoords,
+            mut normal,
+        } = x;
+
+        position[1] += 4.0;
+
+        MeshVertex{ position, texcoords, normal }
+        
+    }).collect();
+
+    let indices = vec![
+        0, 1, 2, 2, 3, 0, // top
+        4, 5, 6, 6, 7, 4, // bottom
+        8, 9, 10, 10, 11, 8, // right
+        12, 13, 14, 14, 15, 12, // left
+        16, 17, 18, 18, 19, 16, // front
+        20, 21, 22, 22, 23, 20, // back
+    ];
+
+    // user side
+    let mat = BaseMaterial::new([0.0, 1.0, 0.0], MX_REF.mat);
+    let mesh = Mesh::new(verticies, Some(indices.clone()));
+    let mesh2 = Mesh::new(anime, Some(indices));
+
+    // render extract
+    let ayay = mesh.into_gpu(&device);
+    let ayay2 = mesh2.into_gpu(&device);
+    let mut ы = ObjectGpu::new(vec![ayay, ayay2], mat.material(&device));
 
     event_loop.run(move |event, _, control_flow| {
         // Have the closure take ownership of the resources.
@@ -297,8 +200,7 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
                     output: &view,
                 };
 
-                cube.update(&mut ctx);
-                cube.render(&mut ctx);
+                ы.render(   &mut ctx);
 
                 frame.present();
             }

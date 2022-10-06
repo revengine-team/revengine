@@ -1,7 +1,7 @@
 //! 
 //! Builders to create render passes
 //! 
-use wgpu::{Color, LoadOp};
+use wgpu::{Color, LoadOp, RenderPassDescriptor};
 
 /// A builder type to simplify the process of creating a render pass descriptor.
 #[derive(Debug)]
@@ -15,7 +15,7 @@ impl<'a> ColorAttachmentDescriptorBuilder<'a> {
     pub const DEFAULT_STORE_OP: bool = true;
 
     /// Begin building a new render pass color attachment descriptor.
-    fn new(attachment: &'a wgpu::TextureView) -> Self {
+    pub fn new(attachment: &'a wgpu::TextureView) -> Self {
         ColorAttachmentDescriptorBuilder {
             descriptor: wgpu::RenderPassColorAttachment {
                 view: attachment,
@@ -128,6 +128,7 @@ impl<'a> DepthStencilAttachmentDescriptorBuilder<'a> {
     }
 }
 
+// TODO: new renderpass from descriptor
 /// A builder type to simplify the process of creating a render pass descriptor.
 #[derive(Debug, Default)]
 pub struct Builder<'a> {
@@ -156,6 +157,13 @@ impl<'a> Builder<'a> {
     /// Begin building a new render pass descriptor.
     pub fn new() -> Self {
         Self::default()
+    }
+
+    pub fn new_from_desc(desc: RenderPassDescriptor<'a, '_>) -> Self {
+        Self{
+            color_attachments: desc.color_attachments.to_vec(),
+            depth_stencil_attachment: desc.depth_stencil_attachment,
+        }
     }
 
     /// Add a single color attachment descriptor to the render pass descriptor.

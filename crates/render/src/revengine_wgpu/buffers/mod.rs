@@ -4,6 +4,7 @@
 pub mod uniform;
 pub mod vertex;
 pub mod vertices;
+pub mod index;
 
 use std::ops::Deref;
 

@@ -1,4 +1,4 @@
-//! Wrapers around Buffer for storing Verticies
+//! Wrappers around Buffer for storing Verticies
 use super::vertices::Vertex;
 use super::Buffer;
 use bytemuck::Pod;
@@ -6,6 +6,7 @@ use std::ops::Deref;
 
 /// Wraper around Buffer to store Verticies
 pub struct VertexBuffer<T: Vertex + Pod> {
+    len: usize,
     buffer: Buffer<T>,
 }
 
@@ -23,8 +24,13 @@ impl<T: Vertex + Pod> VertexBuffer<T> {
         let vertex_buffer = Buffer::new(device, wgpu::BufferUsages::VERTEX, vertices, label);
 
         Self {
+            len: vertices.len(),
             buffer: vertex_buffer,
         }
+    }
+
+    pub fn len(&self) -> usize {
+        self.len
     }
 }
 
