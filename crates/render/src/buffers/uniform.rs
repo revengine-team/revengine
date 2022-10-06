@@ -1,11 +1,11 @@
 //!
 //! Module to ease work with uniforms
-//! 
+//!
 use crate::bind_group_builder;
 use wgpu::util::DeviceExt;
 
-// TODO: this is rarely used 
-/// Wrapper around Buffer to store Uniform. 
+// TODO: this is rarely used
+/// Wrapper around Buffer to store Uniform.
 pub struct UniformBuffer<T> {
     buffer: wgpu::Buffer,
     pub bind_group_layout: wgpu::BindGroupLayout,
@@ -36,13 +36,13 @@ where
     ///
     /// ```
     /// use render::revengine_wgpu::buffers::uniform::UniformBuffer;
-    /// 
+    ///
     /// #[repr(C)]
     /// #[derive(Copy, Clone, Pod, Zeroable)]
     /// struct Example {
     ///     field: [f32; 3],
     /// }
-    /// 
+    ///
     /// let example = Example{ field: [0.0, 0.0 ,0.0] };
     ///
     /// let result = UniformBuffer::init(&device, example, wgpu::ShaderStages::FRAGMENT, "My uniform");
@@ -74,7 +74,7 @@ where
         queue.write_buffer(&self.buffer, 0, bytemuck::cast_slice(&[*data]));
     }
 
-    /// Generate layout for uniform buffer. 
+    /// Generate layout for uniform buffer.
     pub fn create_layout(
         device: &wgpu::Device,
         visibility: wgpu::ShaderStages,

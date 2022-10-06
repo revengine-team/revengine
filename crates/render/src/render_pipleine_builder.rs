@@ -1,6 +1,6 @@
-//! 
+//!
 //! Builders to create render pipeline layout.
-//! 
+//!
 use std::num::NonZeroU32;
 
 #[derive(Debug)]
@@ -16,7 +16,7 @@ pub trait IntoPipelineLayoutDescriptor<'a> {
 }
 
 /// Render pipeline builder is here to ease struggles while creating pipeline.
-/// 
+///
 /// Examples
 /// ```
 /// let pipeline = RenderPipelineBuilder::from_layout(&pipeline_layout, &v_shader)

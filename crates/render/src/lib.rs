@@ -17,15 +17,12 @@ pub mod prelude {
     pub use super::bind_group_builder::{Builder as BindGroupBuilder, LayoutBuilder};
     pub use super::buffers::{
         index::IndexBuffer,
-        uniform::{UniformBuffer, AsBindGroup},
+        uniform::{AsBindGroup, UniformBuffer},
         vertex::VertexBuffer,
         vertices::Vertex as VertexDesc,
         Buffer,
     };
-    pub use super::mesh::{
-        material::{BaseMaterial},
-        Mesh, MeshVertex,
-    };
+    pub use super::mesh::{material::BaseMaterial, Mesh, MeshVertex};
     pub use super::render_pass::{
         Builder as RenderPassBuilder, ColorAttachmentDescriptorBuilder,
         DepthStencilAttachmentDescriptorBuilder,

@@ -1,10 +1,10 @@
 //!
 //! Wrappers around wgpu's Buffer type
-//! 
+//!
+pub mod index;
 pub mod uniform;
 pub mod vertex;
 pub mod vertices;
-pub mod index;
 
 use std::ops::Deref;
 

@@ -1,6 +1,6 @@
 //!
 //! Builders collection to create [`wgpu::BindGroup`]'s and [`wgpu::BindGroupLayout`]'s.
-//! 
+//!
 use std::num::NonZeroU64;
 
 use wgpu::{BufferBinding, SamplerBindingType};

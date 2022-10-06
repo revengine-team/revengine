@@ -1,8 +1,8 @@
 //!
 //! Mesh loading and processing module
 //!
-pub mod pbr;
 pub mod material;
+pub mod pbr;
 
 use bytemuck::{Pod, Zeroable};
 use wgpu::Device;

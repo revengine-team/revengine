@@ -1,6 +1,6 @@
 //!
 //! Traits and structs for rendering process
-//! 
+//!
 
 /// Trait for objects that can be drawn.
 pub trait Renderable {
@@ -12,7 +12,7 @@ pub trait Renderable {
     /// Update object with given context.
     ///
     /// On this step object need to rebind buffers and update it's content.
-    /// Usually there's no need to rebind, because binding is stored along object. 
+    /// Usually there's no need to rebind, because binding is stored along object.
     fn update(&mut self, context: &mut RenderingContext);
     /// Render object using given context
     fn render(&mut self, context: &mut RenderingContext);

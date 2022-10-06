@@ -5,7 +5,10 @@ use winit::{
     window::Window,
 };
 
-use render::{prelude::*, mesh::material::{ObjectGpu, AsMaterial}};
+use render::{
+    mesh::material::{AsMaterial, ObjectGpu},
+    prelude::*,
+};
 
 #[repr(C)]
 #[derive(Copy, Clone, Zeroable, Pod)]
@@ -127,24 +130,33 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
         ([sp.max_x, sp.min_y, sp.min_z], [0., -1.0, 0.], [0., 1.0]),
     ];
 
-    let verticies = a.iter().map(|x| MeshVertex {
-        position: x.0,
-        texcoords: x.2,
-        normal: x.1,
-    }).collect::<Vec<MeshVertex>>();
+    let verticies = a
+        .iter()
+        .map(|x| MeshVertex {
+            position: x.0,
+            texcoords: x.2,
+            normal: x.1,
+        })
+        .collect::<Vec<MeshVertex>>();
 
-    let anime =  verticies.iter().map( |x| {
-        let MeshVertex{
-            mut position,
-            texcoords,
-            normal,
-        } = x;
+    let anime = verticies
+        .iter()
+        .map(|x| {
+            let MeshVertex {
+                mut position,
+                texcoords,
+                normal,
+            } = x;
 
-        position[1] += 4.0;
+            position[1] += 4.0;
 
-        MeshVertex{ position, texcoords: *texcoords, normal: *normal }
-        
-    }).collect();
+            MeshVertex {
+                position,
+                texcoords: *texcoords,
+                normal: *normal,
+            }
+        })
+        .collect();
 
     let indices = vec![
         0, 1, 2, 2, 3, 0, // top
@@ -198,7 +210,7 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
                     output: &view,
                 };
 
-                ы.render(   &mut ctx);
+                ы.render(&mut ctx);
 
                 frame.present();
             }

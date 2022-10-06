@@ -1,6 +1,6 @@
 //!
 //! Module to ease work with textures
-//! 
+//!
 use std::num::NonZeroU32;
 
 use image::DynamicImage;

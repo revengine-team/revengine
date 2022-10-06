@@ -1,6 +1,6 @@
-//! 
+//!
 //! Builders to create render passes
-//! 
+//!
 use wgpu::{Color, LoadOp, RenderPassDescriptor};
 
 /// A builder type to simplify the process of creating a render pass descriptor.
@@ -160,7 +160,7 @@ impl<'a> Builder<'a> {
     }
 
     pub fn new_from_desc(desc: RenderPassDescriptor<'a, '_>) -> Self {
-        Self{
+        Self {
             color_attachments: desc.color_attachments.to_vec(),
             depth_stencil_attachment: desc.depth_stencil_attachment,
         }

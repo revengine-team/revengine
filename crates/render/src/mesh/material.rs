@@ -1,4 +1,3 @@
-
 use wgpu::{
     Color, LoadOp, PipelineLayout, RenderPassColorAttachment, RenderPassDescriptor, RenderPipeline,
 };
