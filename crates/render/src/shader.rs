@@ -1,9 +1,5 @@
 use std::borrow::Cow;
-use std::fs::File;
-use std::io;
-use std::io::Read;
 use std::ops::Deref;
-use std::path::Path;
 
 use wgpu::Device;
 use wgpu::ShaderModule;
@@ -15,7 +11,7 @@ pub struct Shader {
 }
 
 impl Shader {
-    pub fn from_string (
+    pub fn from_string(
         device: &Device,
         contents: impl Into<Cow<'static, str>>,
         stage: ShaderStages,

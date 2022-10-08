@@ -10,7 +10,6 @@ pub struct ObjectGpu {
     material: Box<dyn Material>,
 }
 
-
 impl Renderable for ObjectGpu {
     fn update(&mut self, _context: &mut RenderingContext) {}
 
