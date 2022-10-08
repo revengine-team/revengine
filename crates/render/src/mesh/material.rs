@@ -10,6 +10,7 @@ pub struct ObjectGpu {
     material: Box<dyn Material>,
 }
 
+
 impl Renderable for ObjectGpu {
     fn update(&mut self, _context: &mut RenderingContext) {}
 
@@ -150,21 +151,19 @@ impl AsBindGroup for BaseMaterial {
 
 impl AsPipeline for BaseMaterial {
     fn pipeline(&self, device: &wgpu::Device, layout: &PipelineLayout) -> RenderPipeline {
-        let v_shader = Shader::load(
+        let v_shader = Shader::from_string(
             device,
-            "./crates/render/src/mesh/assets/shaders/base_material_vertex.wgsl",
+            include_str!("./assets/shaders/base_material_vertex.wgsl"),
             wgpu::ShaderStages::VERTEX,
             Some("BaseMaterial vertex shader"),
-        )
-        .expect("Error loading vertex shader");
+        );
 
-        let f_shader = Shader::load(
+        let f_shader = Shader::from_string(
             device,
-            "./crates/render/src/mesh/assets/shaders/base_material_fragment.wgsl",
+            include_str!("./assets/shaders/base_material_fragment.wgsl"),
             wgpu::ShaderStages::FRAGMENT,
             Some("BaseMaterial fragment shader"),
-        )
-        .expect("Error loading fragment shader");
+        );
 
         RenderPipelineBuilder::from_layout(&layout, &v_shader)
             .color_format(wgpu::TextureFormat::Bgra8UnormSrgb)

@@ -15,24 +15,19 @@ pub struct Shader {
 }
 
 impl Shader {
-    pub fn load<T: AsRef<Path>>(
+    pub fn from_string (
         device: &Device,
-        path: T,
+        contents: impl Into<Cow<'static, str>>,
         stage: ShaderStages,
         label: Option<&str>,
-    ) -> Result<Self, io::Error> {
-        let mut file = File::open(path)?;
-        let mut contents = String::new();
-
-        file.read_to_string(&mut contents)?;
-
-        Ok(Self {
+    ) -> Self {
+        Self {
             shader: device.create_shader_module(wgpu::ShaderModuleDescriptor {
                 label,
-                source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(&contents)),
+                source: wgpu::ShaderSource::Wgsl(contents.into()),
             }),
             stage,
-        })
+        }
     }
 
     pub fn stage(&self) -> ShaderStages {
