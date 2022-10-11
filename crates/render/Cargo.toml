@@ -6,8 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-glfw = "0.45.0"
-gl = "0.14.0"
-
-[features]
-wayland = ["glfw/wayland"]
+wgpu = { version = "0.13" }
+bytemuck = { version = "1.12", features = ["derive"] }
+image = { version = "0.24" }
+gltf = { version = "1" }

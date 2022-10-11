@@ -1,2 +1,0 @@
-use render;
-use ecs;
