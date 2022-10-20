@@ -1,11 +1,10 @@
 //!
 //! Mesh loading and processing module
 //!
-pub mod material;
-pub mod pbr;
-
 use bytemuck::{Pod, Zeroable};
-use wgpu::Device;
+use wgpu::RenderPass;
+
+use crate::renderable::gpu::IntoGpu;
 
 use super::prelude::{IndexBuffer, VertexBuffer, VertexDesc};
 
@@ -73,8 +72,12 @@ impl Mesh {
             indicies,
         }
     }
+}
 
-    pub fn into_gpu(&self, device: &Device) -> GpuMesh {
+impl IntoGpu for Mesh {
+    type Item = GpuMesh;
+
+    fn into_gpu(&self, device: &wgpu::Device, _queue: &wgpu::Queue) -> Self::Item {
         let vertex_buffer = VertexBuffer::new(device, &self.verticies, Some("Vertex buffer"));
         let index_buffer = self
             .indicies
@@ -101,6 +104,20 @@ impl GpuMesh {
         Self {
             vertex_buffer,
             index_buffer,
+        }
+    }
+
+    pub fn draw<'a>(&'a self, rp: &mut RenderPass<'a>) {
+        rp.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+
+        match &self.index_buffer {
+            Some(indicies) => {
+                rp.set_index_buffer(indicies.slice(..), wgpu::IndexFormat::Uint32);
+                rp.draw_indexed(0..indicies.len() as u32, 0, 0..1);
+            }
+            None => {
+                rp.draw(0..self.vertex_buffer.len() as u32, 0..1);
+            }
         }
     }
 }

@@ -6,8 +6,9 @@ use winit::{
 };
 
 use render::{
-    mesh::material::{AsMaterial, ObjectGpu},
+    material::AsMaterial,
     prelude::*,
+    renderable::{gpu::IntoGpu, Renderable},
 };
 
 #[repr(C)]
@@ -75,6 +76,7 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
         width: size.width,
         height: size.height,
         present_mode: wgpu::PresentMode::Fifo,
+        alpha_mode: wgpu::CompositeAlphaMode::Auto,
     };
 
     surface.configure(&device, &config);
@@ -139,25 +141,6 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
         })
         .collect::<Vec<MeshVertex>>();
 
-    let anime = verticies
-        .iter()
-        .map(|x| {
-            let MeshVertex {
-                mut position,
-                texcoords,
-                normal,
-            } = x;
-
-            position[1] += 4.0;
-
-            MeshVertex {
-                position,
-                texcoords: *texcoords,
-                normal: *normal,
-            }
-        })
-        .collect();
-
     let indices = vec![
         0, 1, 2, 2, 3, 0, // top
         4, 5, 6, 6, 7, 4, // bottom
@@ -168,14 +151,21 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
     ];
 
     // user side
-    let mat = BaseMaterial::new([0.0, 1.0, 0.0], MX_REF.mat);
+    // let mat = BaseMaterial::from_color(Vec3::new(1.0, 0.0, 0.0));
+    let image = image::open("examples/cube/logo.png").unwrap();
+    let texture = Texture::new(&device, &queue, &image, None, None);
+    let mat = BaseMaterial::new(Vec3::new(1.0, 1.0, 1.0), texture);
     let mesh = Mesh::new(verticies, Some(indices.clone()));
-    let mesh2 = Mesh::new(anime, Some(indices));
+    let mut transform = Transform::from_translation(Vec3::new(0.0, 0.0, 0.0));
+    let camera = Camera {
+        eye: Vec3::new(2.0, 2.0, 2.0),
+        target: Vec3::ZERO,
+        ..Default::default()
+    };
 
     // render extract
-    let ayay = mesh.into_gpu(&device);
-    let ayay2 = mesh2.into_gpu(&device);
-    let mut ы = ObjectGpu::new(vec![ayay, ayay2], mat.material(&device));
+
+    let quat = Quat::from_rotation_y(0.03);
 
     event_loop.run(move |event, _, control_flow| {
         // Have the closure take ownership of the resources.
@@ -210,9 +200,29 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
                     output: &view,
                 };
 
-                ы.render(&mut ctx);
+                transform.rotation *= quat;
+
+                let transfered_mesh = mesh.into_gpu(&device, &ctx.queue);
+                let transfered_mat = mat.material(&device, &ctx.queue);
+                let transfered_trans = transform.into_gpu(&device, &ctx.queue);
+                let transfered_camera = camera.into_gpu(&device, &ctx.queue);
+
+                let mut obj =
+                    Renderable::new(vec![transfered_mesh], transfered_mat, transfered_trans);
+
+                let color_attachment =
+                    ColorAttachmentDescriptorBuilder::new(ctx.output).get_descriptor();
+
+                let rp_desc = wgpu::RenderPassDescriptor {
+                    label: Some("RP Descriptor"),
+                    color_attachments: &[Some(color_attachment)],
+                    depth_stencil_attachment: None,
+                };
+
+                obj.render(&mut ctx, &rp_desc, &transfered_camera);
 
                 frame.present();
+                window.request_redraw();
             }
             Event::WindowEvent {
                 event: WindowEvent::CloseRequested,

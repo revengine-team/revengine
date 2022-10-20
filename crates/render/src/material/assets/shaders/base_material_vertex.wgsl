@@ -3,9 +3,17 @@ struct VertexOutput {
     @builtin(position) position: vec4<f32>,
 };
 
-@group(0)
-@binding(1)
+@group(1)
+@binding(0)
 var<uniform> transform: mat4x4<f32>;
+
+@group(2)
+@binding(0)
+var<uniform> view: mat4x4<f32>;
+
+@group(2)
+@binding(1)
+var<uniform> projection: mat4x4<f32>;
 
 @vertex
 fn vertex(
@@ -15,6 +23,6 @@ fn vertex(
 ) -> VertexOutput {
     var result: VertexOutput;
     result.tex_coord = tex_coord;
-    result.position = transform * vec4(position, 1.0);
+    result.position = projection * view * transform * vec4(position, 1.0);
     return result;
 }
