@@ -1,132 +1,25 @@
 use bytemuck::{Pod, Zeroable};
-use std::borrow::Cow;
-use wgpu::{util::DeviceExt, vertex_attr_array, Device};
 use winit::{
     event::{Event, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
     window::Window,
 };
 
-use render::revengine_wgpu::prelude::*;
+use render::{
+    material::AsMaterial,
+    prelude::*,
+    renderable::{gpu::IntoGpu, Renderable},
+};
 
 #[repr(C)]
-#[derive(Copy, Clone, Debug, Pod, Zeroable)]
-struct Vertex {
-    position: [f32; 2],
-}
-
-impl VertexDesc for Vertex {
-    fn desc<'a>() -> wgpu::VertexBufferLayout<'a> {
-        wgpu::VertexBufferLayout {
-            array_stride: std::mem::size_of::<Vertex>() as wgpu::BufferAddress,
-            step_mode: wgpu::VertexStepMode::Vertex,
-            attributes: &vertex_attr_array![0 => Float32x2],
-        }
-    }
-}
-
-const VERTICES: &[Vertex] = &[
-    Vertex {
-        position: [-1.0, -1.0],
-    },
-    Vertex {
-        position: [0.0, 1.0],
-    },
-    Vertex {
-        position: [1.0, -1.0],
-    },
-];
-
-const INDICES: &[u32] = &[0, 1, 2];
-
-#[repr(C)]
-#[derive(Copy, Clone, Debug, Pod, Zeroable)]
-struct Color {
-    color: [f32; 3],
-}
-
-struct TriangleObj {
-    pipeline: wgpu::RenderPipeline,
-    uniforms: UniformBuffer<Color>,
-    vertex_buffer: wgpu::Buffer,
-    index_buffer: wgpu::Buffer,
-    color: Color,
-}
-
-impl Renderable for TriangleObj {
-    fn update(&mut self, context: &mut RenderingContext) {
-        self.uniforms.copy_to_gpu(context.queue, &self.color)
-    }
-
-    fn render(&mut self, context: &mut RenderingContext) {
-        let mut encoder = context.create_encoder("Triangle Encoder");
-
-        {
-            let mut rend_pass = RenderPassBuilder::new()
-                .color_attachment(context.output, |col_builer| {
-                    col_builer
-                        .load_op(wgpu::LoadOp::Clear(wgpu::Color::BLUE))
-                        .store_op(true)
-                })
-                .begin(&mut encoder);
-
-            rend_pass.set_pipeline(&self.pipeline);
-            rend_pass.set_bind_group(0, self.uniforms.get_bind_group(), &[]);
-            rend_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
-            rend_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
-            rend_pass.draw_indexed(0..3, 0, 0..1);
-        }
-
-        context.submit(encoder);
-    }
-}
-
-impl TriangleObj {
-    fn new(device: &Device, color: Color) -> Self {
-        let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: None,
-            source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("shader.wgsl"))),
-        });
-
-        let uniforms =
-            UniformBuffer::<Color>::new(device, wgpu::ShaderStages::FRAGMENT, "Triangle Uniform");
-
-        let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            contents: bytemuck::cast_slice(VERTICES),
-            usage: wgpu::BufferUsages::VERTEX,
-            label: Some("Triangle verices"),
-        });
-
-        let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            contents: bytemuck::cast_slice(INDICES),
-            usage: wgpu::BufferUsages::INDEX,
-            label: Some("Triangle indices"),
-        });
-
-        let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: Some("Trianle pipline layout"),
-            bind_group_layouts: &[uniforms.get_layout()],
-            push_constant_ranges: &[],
-        });
-
-        let pipeline = RenderPipelineBuilder::from_layout(&pipeline_layout, &shader)
-            .add_vertex_buffer_layout(Vertex::desc())
-            .fragment_shader(&shader)
-            .color_format(wgpu::TextureFormat::Bgra8UnormSrgb)
-            .build(device, Some("Triangle pipeline"));
-
-        Self {
-            pipeline,
-            uniforms,
-            vertex_buffer,
-            index_buffer,
-            color,
-        }
-    }
+#[derive(Copy, Clone, Zeroable, Pod)]
+struct Mat4x4 {
+    mat: [f32; 16],
 }
 
 async fn run(event_loop: EventLoop<()>, window: Window) {
     let size = window.inner_size();
+
     let instance = wgpu::Instance::new(wgpu::Backends::all());
     let surface = unsafe { instance.create_surface(&window) };
     let adapter = instance
@@ -139,6 +32,8 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
         .await
         .expect("Failed to find an appropriate adapter");
 
+    let swapchain_format = surface.get_supported_formats(&adapter)[0];
+
     // Create the logical device and command queue
     let (device, mut queue) = adapter
         .request_device(
@@ -146,15 +41,13 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
                 label: None,
                 features: wgpu::Features::empty(),
                 // Make sure we use the texture resolution limits from the adapter, so we can support images the size of the swapchain.
-                limits: wgpu::Limits::downlevel_defaults(), // limits: wgpu::Limits::downlevel_webgl2_defaults()
-                                                            // .using_resolution(adapter.limits()),
+                limits: wgpu::Limits::downlevel_webgl2_defaults()
+                    .using_resolution(adapter.limits()),
             },
             None,
         )
         .await
         .expect("Failed to create device");
-
-    let swapchain_format = surface.get_supported_formats(&adapter)[0];
 
     let mut config = wgpu::SurfaceConfiguration {
         usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
@@ -162,14 +55,38 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
         width: size.width,
         height: size.height,
         present_mode: wgpu::PresentMode::Fifo,
+        alpha_mode: wgpu::CompositeAlphaMode::Auto,
     };
 
     surface.configure(&device, &config);
 
-    let color = Color {
-        color: [1.0, 0.0, 1.0],
+    #[rustfmt::skip]
+    let vertices = &[
+        ([-0.5, -0.5, 0.0], [0.0, 0.0, 1.0], [0.0, 0.0]),
+        ([0.5, -0.5, 0.0], [0.0, 0.0, 1.0], [1.0, 0.0]),
+        ([0.0, 0.7, 0.0], [0.0, 0.0, 1.0], [0.5, 1.0]), 
+    ];
+
+    let vertices = vertices
+        .iter()
+        .map(|x| MeshVertex {
+            position: x.0,
+            texcoords: x.2,
+            normal: x.1,
+        })
+        .collect::<Vec<MeshVertex>>();
+
+    let indices = vec![0, 1, 2];
+
+    let mat = BaseMaterial::from_color(Vec3::new(1.0, 1.0, 1.0));
+    let mesh = Mesh::new(vertices, Some(indices.clone()));
+    let mut transform = Transform::from_translation(Vec3::new(0.0, 0.0, -1.0));
+
+    let camera = Camera {
+        eye: Vec3::new(0.0, 0.0, 1.0),
+        target: Vec3::ZERO,
+        ..Default::default()
     };
-    let mut triangle = TriangleObj::new(&device, color);
 
     event_loop.run(move |event, _, control_flow| {
         // Have the closure take ownership of the resources.
@@ -204,10 +121,27 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
                     output: &view,
                 };
 
-                triangle.update(&mut ctx);
-                triangle.render(&mut ctx);
+                let transfered_mesh = mesh.into_gpu(&device, &ctx.queue);
+                let transfered_mat = mat.material(&device, &ctx.queue);
+                let transfered_trans = transform.into_gpu(&device, &ctx.queue);
+                let transfered_camera = camera.into_gpu(&device, &ctx.queue);
+
+                let mut obj =
+                    Renderable::new(vec![transfered_mesh], transfered_mat, transfered_trans);
+
+                let color_attachment =
+                    ColorAttachmentDescriptorBuilder::new(ctx.output).get_descriptor();
+
+                let rp_desc = wgpu::RenderPassDescriptor {
+                    label: Some("RP Descriptor"),
+                    color_attachments: &[Some(color_attachment)],
+                    depth_stencil_attachment: None,
+                };
+
+                obj.render(&mut ctx, &rp_desc, &transfered_camera);
 
                 frame.present();
+                window.request_redraw();
             }
             Event::WindowEvent {
                 event: WindowEvent::CloseRequested,
@@ -221,6 +155,5 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
 fn main() {
     let event_loop = EventLoop::new();
     let window = winit::window::Window::new(&event_loop).unwrap();
-    // Temporarily avoid srgb formats for the swapchain on the web
     pollster::block_on(run(event_loop, window));
 }
