@@ -58,16 +58,24 @@ impl AsBindGroup for Camera {
             &[self.get_projection()],
             Some("Camera Projection Matrix"),
         );
+        let position_buffer = Buffer::new(
+            device,
+            wgpu::BufferUsages::UNIFORM,
+            &[self.eye],
+            Some("Camera Position"),
+        );
         BindGroupBuilder::new()
             .buffer::<Mat4>(&view_buffer, 0..1)
             .buffer::<Mat4>(&projection_buffer, 0..1)
+            .buffer::<Vec3>(&position_buffer, 0..1)
             .build(device, layout, Some("Camera Bind Group"))
     }
 
     fn bind_group_layout(device: &wgpu::Device) -> wgpu::BindGroupLayout {
         LayoutBuilder::new()
-            .uniform_buffer(wgpu::ShaderStages::VERTEX, false)
-            .uniform_buffer(wgpu::ShaderStages::VERTEX, false)
+            .uniform_buffer(wgpu::ShaderStages::VERTEX_FRAGMENT, false)
+            .uniform_buffer(wgpu::ShaderStages::VERTEX_FRAGMENT, false)
+            .uniform_buffer(wgpu::ShaderStages::VERTEX_FRAGMENT, false)
             .build(device, Some("Camera layout"))
     }
 }

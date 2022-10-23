@@ -1,4 +1,3 @@
-use bytemuck::{Pod, Zeroable};
 use winit::{
     event::{Event, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
@@ -6,36 +5,10 @@ use winit::{
 };
 
 use render::{
-    material::AsMaterial,
+    light::{DirLight, DirLightWGPU, Lights, PointLight, PointLightWGPU, SpotLight, SpotLightWGPU},
+    material::{pbr::PbrMaterial, AsMaterial},
     prelude::*,
     renderable::{gpu::IntoGpu, Renderable},
-};
-
-#[repr(C)]
-#[derive(Copy, Clone, Zeroable, Pod)]
-struct Mat4x4 {
-    mat: [f32; 16],
-}
-
-const MX_REF: Mat4x4 = Mat4x4 {
-    mat: [
-        1.7342978,
-        -0.34566143,
-        -0.27681828,
-        -0.24913645,
-        0.5202893,
-        1.1522048,
-        0.92272764,
-        0.8304548,
-        0.0,
-        2.0931718,
-        -0.55363655,
-        -0.4982729,
-        0.0,
-        0.0,
-        5.5786643,
-        6.0207977,
-    ],
 };
 
 async fn run(event_loop: EventLoop<()>, window: Window) {
@@ -53,7 +26,12 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
         .await
         .expect("Failed to find an appropriate adapter");
 
-    let swapchain_format = surface.get_supported_formats(&adapter)[0];
+    let a = surface.get_supported_formats(&adapter);
+    dbg! {&a};
+    let swapchain_format = a
+        .iter()
+        .find(|&&x| x == wgpu::TextureFormat::Rgba8UnormSrgb)
+        .unwrap();
 
     // Create the logical device and command queue
     let (device, mut queue) = adapter
@@ -72,7 +50,7 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
 
     let mut config = wgpu::SurfaceConfiguration {
         usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-        format: swapchain_format,
+        format: *swapchain_format,
         width: size.width,
         height: size.height,
         present_mode: wgpu::PresentMode::Fifo,
@@ -154,18 +132,53 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
     // let mat = BaseMaterial::from_color(Vec3::new(1.0, 0.0, 0.0));
     let image = image::open("examples/cube/logo.png").unwrap();
     let texture = Texture::new(&device, &queue, &image, None, None);
-    let mat = BaseMaterial::new(Vec3::new(1.0, 1.0, 1.0), texture);
+    // let mat = BaseMaterial::new(Vec3::new(1.0, 0.0, 1.0), texture);
+    let mat = PbrMaterial::new(
+        Vec4::new(1.0, 1.0, 1.0, 1.0),
+        Some(texture),
+        Vec4::new(0.0, 0.0, 0.0, 0.0),
+        0.1,
+        0.2,
+        None,
+    );
     let mesh = Mesh::new(verticies, Some(indices.clone()));
     let mut transform = Transform::from_translation(Vec3::new(0.0, 0.0, 0.0));
-    let camera = Camera {
-        eye: Vec3::new(2.0, 2.0, 2.0),
+    let mut camera = Camera {
+        eye: Vec3::new(4.0, 4.0, 4.0),
         target: Vec3::ZERO,
         ..Default::default()
     };
 
+    let mut lights = Lights {
+        dir_lights: [Default::default(); 2],
+        spot_lights: [Default::default(); 8],
+        point_lights: [Default::default(); 16],
+    };
+
+    lights.point_lights[1] = PointLight {
+        position: Vec3::new(1.0, 2.0, 3.0),
+        diffuse: Vec3::new(4.0, 5.0, 6.0),
+        ..Default::default()
+    }
+    .into();
+
+    lights.dir_lights[1] = DirLight {
+        direction: Vec3::new(1.0, 2.0, 3.0),
+        diffuse: Vec3::new(4.0, 5.0, 6.0),
+        ..Default::default()
+    }
+    .into();
+
+    lights.spot_lights[1] = SpotLight {
+        position: Vec3::new(1.0, 2.0, 3.0),
+        diffuse: Vec3::new(4.0, 5.0, 6.0),
+        ..Default::default()
+    }
+    .into();
     // render extract
 
     let quat = Quat::from_rotation_y(0.03);
+    let mut t: f32 = 1.0;
 
     event_loop.run(move |event, _, control_flow| {
         // Have the closure take ownership of the resources.
@@ -201,14 +214,15 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
                 };
 
                 transform.rotation *= quat;
+                camera.fovy = 180.0 * t.sin();
 
                 let transfered_mesh = mesh.into_gpu(&device, &ctx.queue);
                 let transfered_mat = mat.material(&device, &ctx.queue);
                 let transfered_trans = transform.into_gpu(&device, &ctx.queue);
                 let transfered_camera = camera.into_gpu(&device, &ctx.queue);
+                let transfered_lights = lights.into_gpu(&device, &ctx.queue);
 
-                let mut obj =
-                    Renderable::new(vec![transfered_mesh], transfered_mat, transfered_trans);
+                let obj = Renderable::new(vec![transfered_mesh], transfered_mat, transfered_trans);
 
                 let color_attachment =
                     ColorAttachmentDescriptorBuilder::new(ctx.output).get_descriptor();
@@ -219,7 +233,7 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
                     depth_stencil_attachment: None,
                 };
 
-                obj.render(&mut ctx, &rp_desc, &transfered_camera);
+                obj.render(&mut ctx, &rp_desc, &transfered_camera, &transfered_lights);
 
                 frame.present();
                 window.request_redraw();

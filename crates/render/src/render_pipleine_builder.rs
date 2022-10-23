@@ -65,7 +65,7 @@ impl<'a> RenderPipelineBuilder<'a> {
         alpha_to_coverage_enabled: Self::DEFAULT_ALPHA_TO_COVERAGE_ENABLED,
     };
 
-    pub const DEFAULT_COLOR_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Rgba16Float;
+    pub const DEFAULT_COLOR_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Rgba8UnormSrgb;
     pub const DEFAULT_COLOR_BLEND: wgpu::BlendComponent = wgpu::BlendComponent {
         src_factor: wgpu::BlendFactor::SrcAlpha,
         dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,

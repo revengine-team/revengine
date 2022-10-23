@@ -75,7 +75,7 @@ impl AsBindGroup for Transform {
 
     fn bind_group_layout(device: &wgpu::Device) -> wgpu::BindGroupLayout {
         LayoutBuilder::new()
-            .uniform_buffer(wgpu::ShaderStages::VERTEX, false)
+            .uniform_buffer(wgpu::ShaderStages::VERTEX_FRAGMENT, false)
             .build(device, Some("Transform BindGroup"))
     }
 }

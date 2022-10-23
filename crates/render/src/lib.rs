@@ -4,6 +4,7 @@
 pub mod bind_group_builder;
 pub mod buffers;
 pub mod camera;
+pub mod light;
 pub mod material;
 pub mod mesh;
 pub mod render_pass;

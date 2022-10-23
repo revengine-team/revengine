@@ -2,6 +2,7 @@ pub mod gpu;
 
 use crate::{
     camera::CameraBindGroup,
+    light::LightsBindGroup,
     mesh::GpuMesh,
     prelude::{Material, RenderingContext},
     transform::TransformBindGroup,
@@ -31,9 +32,9 @@ impl Renderable {
         ctx: &mut RenderingContext,
         rp_desc: &wgpu::RenderPassDescriptor,
         camera: &CameraBindGroup,
-        // TODO: light
+        lights: &LightsBindGroup,
     ) {
-        let mut encoder = ctx.create_encoder("Base Obj Encoder");
+        let mut encoder = ctx.create_encoder("Encoder");
 
         {
             let mut rend_pass = self.material.begin_render_pass(
@@ -42,6 +43,7 @@ impl Renderable {
                 rp_desc,
                 &self.transform,
                 camera,
+                lights,
             );
 
             for mesh in &self.meshes {

@@ -1,6 +1,9 @@
+pub mod pbr;
+
 // pub mod pbr;
 use crate::{
-    camera::CameraBindGroup, prelude::*, texture::TextureDefaults, transform::TransformBindGroup,
+    camera::CameraBindGroup, light::LightsBindGroup, prelude::*, texture::TextureDefaults,
+    transform::TransformBindGroup,
 };
 use glam::Vec3;
 use wgpu::{PipelineLayout, RenderPipeline};
@@ -12,7 +15,8 @@ pub trait Material {
         encoder: &'a mut wgpu::CommandEncoder,
         rp_desc: &'a wgpu::RenderPassDescriptor,
         transform_data: &'a TransformBindGroup,
-        camera_data: &'a CameraBindGroup, // lighting_data: &LightingBindGroup,
+        camera_data: &'a CameraBindGroup,
+        lights_data: &'a LightsBindGroup,
     ) -> wgpu::RenderPass<'a>;
 }
 
@@ -22,11 +26,13 @@ pub trait AsPipeline {
         layout: &[&wgpu::BindGroupLayout],
         label: Option<&str>,
     ) -> PipelineLayout {
-        device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label,
-            bind_group_layouts: layout,
-            push_constant_ranges: &[],
-        })
+        device.create_pipeline_layout(
+            &(wgpu::PipelineLayoutDescriptor {
+                label,
+                bind_group_layouts: layout,
+                push_constant_ranges: &[],
+            }),
+        )
     }
 
     fn pipeline(&self, device: &wgpu::Device, layout: &PipelineLayout) -> RenderPipeline;
@@ -126,7 +132,7 @@ impl AsPipeline for BaseMaterial {
         );
 
         RenderPipelineBuilder::from_layout(&layout, &v_shader)
-            .color_format(wgpu::TextureFormat::Bgra8UnormSrgb)
+            .color_format(wgpu::TextureFormat::Rgba8UnormSrgb)
             .add_vertex_buffer_layout(MeshVertex::desc())
             .fragment_shader(&f_shader)
             .cull_mode(Some(wgpu::Face::Back))
@@ -168,7 +174,8 @@ impl Material for BaseMaterialGpu {
         rp_desc: &'a wgpu::RenderPassDescriptor,
         transform_data: &'a TransformBindGroup,
         camera_data: &'a CameraBindGroup,
-        // lighting_data: &LightingBindGroup,
+        // HACK
+        _lights_data: &'a LightsBindGroup,
     ) -> wgpu::RenderPass<'a> {
         let mut rend_pass = encoder.begin_render_pass(rp_desc);
 
