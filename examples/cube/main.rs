@@ -1,40 +1,13 @@
-use bytemuck::{Pod, Zeroable};
+use render::{
+    light::{DirLight, Lights, PointLight, SpotLight},
+    material::{pbr::PbrMaterial, AsMaterial},
+    prelude::*,
+    renderable::{gpu::IntoGpu, Renderable},
+};
 use winit::{
     event::{Event, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
     window::Window,
-};
-
-use render::{
-    mesh::material::{AsMaterial, ObjectGpu},
-    prelude::*,
-};
-
-#[repr(C)]
-#[derive(Copy, Clone, Zeroable, Pod)]
-struct Mat4x4 {
-    mat: [f32; 16],
-}
-
-const MX_REF: Mat4x4 = Mat4x4 {
-    mat: [
-        1.7342978,
-        -0.34566143,
-        -0.27681828,
-        -0.24913645,
-        0.5202893,
-        1.1522048,
-        0.92272764,
-        0.8304548,
-        0.0,
-        2.0931718,
-        -0.55363655,
-        -0.4982729,
-        0.0,
-        0.0,
-        5.5786643,
-        6.0207977,
-    ],
 };
 
 async fn run(event_loop: EventLoop<()>, window: Window) {
@@ -52,7 +25,12 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
         .await
         .expect("Failed to find an appropriate adapter");
 
-    let swapchain_format = surface.get_supported_formats(&adapter)[0];
+    let a = surface.get_supported_formats(&adapter);
+    dbg! {&a};
+    let swapchain_format = a
+        .iter()
+        .find(|&&x| x == wgpu::TextureFormat::Rgba8UnormSrgb)
+        .unwrap();
 
     // Create the logical device and command queue
     let (device, mut queue) = adapter
@@ -71,10 +49,11 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
 
     let mut config = wgpu::SurfaceConfiguration {
         usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-        format: swapchain_format,
+        format: *swapchain_format,
         width: size.width,
         height: size.height,
         present_mode: wgpu::PresentMode::Fifo,
+        alpha_mode: wgpu::CompositeAlphaMode::Auto,
     };
 
     surface.configure(&device, &config);
@@ -139,25 +118,6 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
         })
         .collect::<Vec<MeshVertex>>();
 
-    let anime = verticies
-        .iter()
-        .map(|x| {
-            let MeshVertex {
-                mut position,
-                texcoords,
-                normal,
-            } = x;
-
-            position[1] += 4.0;
-
-            MeshVertex {
-                position,
-                texcoords: *texcoords,
-                normal: *normal,
-            }
-        })
-        .collect();
-
     let indices = vec![
         0, 1, 2, 2, 3, 0, // top
         4, 5, 6, 6, 7, 4, // bottom
@@ -168,19 +128,57 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
     ];
 
     // user side
-    let mat = BaseMaterial::new([0.0, 1.0, 0.0], MX_REF.mat);
-    let mesh = Mesh::new(verticies, Some(indices.clone()));
-    let mesh2 = Mesh::new(anime, Some(indices));
+    // let mat = BaseMaterial::from_color(Vec3::new(1.0, 0.0, 0.0));
+    let image = image::open("examples/cube/logo.png").unwrap();
+    let texture = Texture::new(&device, &queue, &image, None, None);
+    // let mat = BaseMaterial::new(Vec3::new(1.0, 0.0, 1.0), texture);
+    let mat = PbrMaterial::new(
+        Vec4::new(1.0, 1.0, 1.0, 1.0),
+        Some(texture),
+        Vec4::new(0.0, 0.0, 0.0, 0.0),
+        0.1,
+        0.2,
+        None,
+    );
+    let mesh = Mesh::new(verticies, Some(indices));
+    let mut transform = Transform::from_translation(Vec3::new(0.0, 0.0, 0.0));
 
-    // render extract
-    let ayay = mesh.into_gpu(&device);
-    let ayay2 = mesh2.into_gpu(&device);
-    let mut ы = ObjectGpu::new(vec![ayay, ayay2], mat.material(&device));
+    let camera = Camera {
+        eye: Vec3::new(1.0, 1.0, 1.0),
+        target: Vec3::ZERO,
+        ..Default::default()
+    };
+
+    let mut lights = Lights {
+        dir_lights: [Default::default(); 2],
+        spot_lights: [Default::default(); 8],
+        point_lights: [Default::default(); 16],
+    };
+
+    lights.point_lights[1] = PointLight {
+        position: Vec3::new(4.0, 4.0, 4.0),
+        diffuse: Vec3::new(40.0, 0.0, 0.0),
+        ..Default::default()
+    }
+    .into();
+
+    lights.dir_lights[1] = DirLight {
+        direction: Vec3::new(1.0, 0.0, 0.0),
+        diffuse: Vec3::new(4.0, 5.0, 6.0),
+        ..Default::default()
+    }
+    .into();
+
+    lights.spot_lights[1] = SpotLight {
+        position: Vec3::new(1.0, 2.0, 3.0),
+        diffuse: Vec3::new(4.0, 5.0, 6.0),
+        ..Default::default()
+    }
+    .into();
+
+    let quat = Quat::from_rotation_y(0.03);
 
     event_loop.run(move |event, _, control_flow| {
-        // Have the closure take ownership of the resources.
-        // `event_loop.run` never returns, therefore we must do this to ensure
-        // the resources are properly cleaned up.
         let _ = (&instance, &adapter);
 
         *control_flow = ControlFlow::Wait;
@@ -189,11 +187,9 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
                 event: WindowEvent::Resized(size),
                 ..
             } => {
-                // Reconfigure the surface with the new size
                 config.width = size.width;
                 config.height = size.height;
                 surface.configure(&device, &config);
-                // On macos the window needs to be redrawn manually after resizing
                 window.request_redraw();
             }
             Event::RedrawRequested(_) => {
@@ -210,9 +206,29 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
                     output: &view,
                 };
 
-                ы.render(&mut ctx);
+                transform.rotation *= quat;
+
+                let transfered_mesh = mesh.into_gpu(&device, ctx.queue);
+                let transfered_mat = mat.material(&device, ctx.queue);
+                let transfered_trans = transform.into_gpu(&device, ctx.queue);
+                let transfered_camera = camera.into_gpu(&device, ctx.queue);
+                let transfered_lights = lights.into_gpu(&device, ctx.queue);
+
+                let obj = Renderable::new(vec![transfered_mesh], transfered_mat, transfered_trans);
+
+                let color_attachment =
+                    ColorAttachmentDescriptorBuilder::new(ctx.output).get_descriptor();
+
+                let rp_desc = wgpu::RenderPassDescriptor {
+                    label: Some("RP Descriptor"),
+                    color_attachments: &[Some(color_attachment)],
+                    depth_stencil_attachment: None,
+                };
+
+                obj.render(&mut ctx, &rp_desc, &transfered_camera, &transfered_lights);
 
                 frame.present();
+                window.request_redraw();
             }
             Event::WindowEvent {
                 event: WindowEvent::CloseRequested,

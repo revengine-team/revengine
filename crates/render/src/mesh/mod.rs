@@ -1,16 +1,15 @@
 //!
 //! Mesh loading and processing module
 //!
-pub mod material;
-pub mod pbr;
-
 use bytemuck::{Pod, Zeroable};
-use wgpu::Device;
+use wgpu::RenderPass;
+
+use crate::renderable::gpu::IntoGpu;
 
 use super::prelude::{IndexBuffer, VertexBuffer, VertexDesc};
 
 #[repr(C)]
-#[derive(Copy, Clone, Pod, Zeroable)]
+#[derive(Copy, Clone, Pod, Zeroable, Debug)]
 pub struct MeshVertex {
     pub position: [f32; 3],
     pub texcoords: [f32; 2],
@@ -60,24 +59,29 @@ impl VertexDesc for MeshVertex {
     }
 }
 
+#[derive(Debug)]
 pub struct Mesh {
-    verticies: Vec<MeshVertex>,
+    vertices: Vec<MeshVertex>,
     // TODO: decide if it's always a u32
-    indicies: Option<Vec<u32>>,
+    indices: Option<Vec<u32>>,
 }
 
 impl Mesh {
     pub fn new(verticies: Vec<MeshVertex>, indicies: Option<Vec<u32>>) -> Self {
         Self {
-            verticies,
-            indicies,
+            vertices: verticies,
+            indices: indicies,
         }
     }
+}
 
-    pub fn into_gpu(&self, device: &Device) -> GpuMesh {
-        let vertex_buffer = VertexBuffer::new(device, &self.verticies, Some("Vertex buffer"));
+impl IntoGpu for Mesh {
+    type Item = GpuMesh;
+
+    fn into_gpu(&self, device: &wgpu::Device, _queue: &wgpu::Queue) -> Self::Item {
+        let vertex_buffer = VertexBuffer::new(device, &self.vertices, Some("Vertex buffer"));
         let index_buffer = self
-            .indicies
+            .indices
             .as_ref()
             .map(|i| IndexBuffer::new(device, &i, Some("Index buffer")));
 
@@ -101,6 +105,20 @@ impl GpuMesh {
         Self {
             vertex_buffer,
             index_buffer,
+        }
+    }
+
+    pub fn draw<'a>(&'a self, rp: &mut RenderPass<'a>) {
+        rp.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+
+        match &self.index_buffer {
+            Some(indicies) => {
+                rp.set_index_buffer(indicies.slice(..), wgpu::IndexFormat::Uint32);
+                rp.draw_indexed(0..indicies.len() as u32, 0, 0..1);
+            }
+            None => {
+                rp.draw(0..self.vertex_buffer.len() as u32, 0..1);
+            }
         }
     }
 }

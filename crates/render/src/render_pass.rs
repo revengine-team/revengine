@@ -51,6 +51,10 @@ impl<'a> ColorAttachmentDescriptorBuilder<'a> {
         self.descriptor.ops.store = store_op;
         self
     }
+
+    pub fn get_descriptor(self) -> wgpu::RenderPassColorAttachment<'a> {
+        self.descriptor
+    }
 }
 
 /// A builder type to simplify the process of creating a render pass descriptor.

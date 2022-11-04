@@ -1,23 +1,3 @@
-//!
-//! Traits and structs for rendering process
-//!
-
-/// Trait for objects that can be drawn.
-pub trait Renderable {
-    /// Defines if object should render, or is it there just to update buffers
-    /// and drink tea.
-    fn should_render(&self, _context: &RenderingContext) -> bool {
-        true
-    }
-    /// Update object with given context.
-    ///
-    /// On this step object need to rebind buffers and update it's content.
-    /// Usually there's no need to rebind, because binding is stored along object.
-    fn update(&mut self, context: &mut RenderingContext);
-    /// Render object using given context
-    fn render(&mut self, context: &mut RenderingContext);
-}
-
 /// Represents context for render pass.
 pub struct RenderingContext<'a> {
     /// Handle to the rendering device

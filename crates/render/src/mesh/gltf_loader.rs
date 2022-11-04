@@ -1,3 +1,0 @@
-//! GLTF loading module
-
-

@@ -7,7 +7,7 @@ use wgpu::util::DeviceExt;
 // TODO: this is rarely used
 /// Wrapper around Buffer to store Uniform.
 pub struct UniformBuffer<T> {
-    buffer: wgpu::Buffer,
+    pub buffer: wgpu::Buffer,
     pub bind_group_layout: wgpu::BindGroupLayout,
     pub bind_group: wgpu::BindGroup,
     phantom: std::marker::PhantomData<T>,
@@ -97,6 +97,11 @@ where
 }
 
 pub trait AsBindGroup {
-    fn bind_group(&self, device: &wgpu::Device, layout: &wgpu::BindGroupLayout) -> wgpu::BindGroup;
+    fn bind_group(
+        &self,
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+        layout: &wgpu::BindGroupLayout,
+    ) -> wgpu::BindGroup;
     fn bind_group_layout(device: &wgpu::Device) -> wgpu::BindGroupLayout;
 }

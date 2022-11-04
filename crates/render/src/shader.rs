@@ -17,13 +17,12 @@ impl Shader {
         stage: ShaderStages,
         label: Option<&str>,
     ) -> Self {
-        Self {
-            shader: device.create_shader_module(wgpu::ShaderModuleDescriptor {
-                label,
-                source: wgpu::ShaderSource::Wgsl(contents.into()),
-            }),
-            stage,
-        }
+        let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+            label,
+            source: wgpu::ShaderSource::Wgsl(contents.into()),
+        });
+
+        Self { shader, stage }
     }
 
     pub fn stage(&self) -> ShaderStages {

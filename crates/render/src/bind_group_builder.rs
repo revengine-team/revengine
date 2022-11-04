@@ -48,7 +48,6 @@ impl LayoutBuilder {
         let ty = wgpu::BindingType::Buffer {
             ty: wgpu::BufferBindingType::Storage { read_only },
             has_dynamic_offset,
-            // wgpu 0.5-0.6 TODO: potential perf hit, investigate this field
             min_binding_size: None,
         };
         self.binding(visibility, ty)
@@ -170,10 +169,7 @@ impl<'a> Builder<'a> {
     /// range of **bytes**.
     ///
     /// Type `T` *must* be either `#[repr(C)]` or `#[repr(transparent)]`.
-    pub fn buffer<T>(self, buffer: &'a wgpu::Buffer, range: std::ops::Range<usize>) -> Self
-    where
-        T: Copy,
-    {
+    pub fn buffer<T>(self, buffer: &'a wgpu::Buffer, range: std::ops::Range<usize>) -> Self {
         let size_bytes = std::mem::size_of::<T>() as wgpu::BufferAddress;
         let start = range.start as wgpu::BufferAddress * size_bytes;
         let end = range.end as wgpu::BufferAddress * size_bytes;
