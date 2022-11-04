@@ -16,6 +16,7 @@ use super::{AsMaterial, AsPipeline, Material};
 
 pub type Color = Vec4;
 
+#[derive(Debug)]
 pub struct PbrMaterial {
     pub base_color: Color,
     pub base_texture: Option<Texture>,

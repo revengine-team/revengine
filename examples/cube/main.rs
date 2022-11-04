@@ -1,14 +1,13 @@
+use render::{
+    light::{DirLight, Lights, PointLight, SpotLight},
+    material::{pbr::PbrMaterial, AsMaterial},
+    prelude::*,
+    renderable::{gpu::IntoGpu, Renderable},
+};
 use winit::{
     event::{Event, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
     window::Window,
-};
-
-use render::{
-    light::{DirLight, DirLightWGPU, Lights, PointLight, PointLightWGPU, SpotLight, SpotLightWGPU},
-    material::{pbr::PbrMaterial, AsMaterial},
-    prelude::*,
-    renderable::{gpu::IntoGpu, Renderable},
 };
 
 async fn run(event_loop: EventLoop<()>, window: Window) {
@@ -141,10 +140,11 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
         0.2,
         None,
     );
-    let mesh = Mesh::new(verticies, Some(indices.clone()));
+    let mesh = Mesh::new(verticies, Some(indices));
     let mut transform = Transform::from_translation(Vec3::new(0.0, 0.0, 0.0));
-    let mut camera = Camera {
-        eye: Vec3::new(4.0, 4.0, 4.0),
+
+    let camera = Camera {
+        eye: Vec3::new(1.0, 1.0, 1.0),
         target: Vec3::ZERO,
         ..Default::default()
     };
@@ -156,14 +156,14 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
     };
 
     lights.point_lights[1] = PointLight {
-        position: Vec3::new(1.0, 2.0, 3.0),
-        diffuse: Vec3::new(4.0, 5.0, 6.0),
+        position: Vec3::new(4.0, 4.0, 4.0),
+        diffuse: Vec3::new(40.0, 0.0, 0.0),
         ..Default::default()
     }
     .into();
 
     lights.dir_lights[1] = DirLight {
-        direction: Vec3::new(1.0, 2.0, 3.0),
+        direction: Vec3::new(1.0, 0.0, 0.0),
         diffuse: Vec3::new(4.0, 5.0, 6.0),
         ..Default::default()
     }
@@ -175,15 +175,10 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
         ..Default::default()
     }
     .into();
-    // render extract
 
     let quat = Quat::from_rotation_y(0.03);
-    let mut t: f32 = 1.0;
 
     event_loop.run(move |event, _, control_flow| {
-        // Have the closure take ownership of the resources.
-        // `event_loop.run` never returns, therefore we must do this to ensure
-        // the resources are properly cleaned up.
         let _ = (&instance, &adapter);
 
         *control_flow = ControlFlow::Wait;
@@ -192,11 +187,9 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
                 event: WindowEvent::Resized(size),
                 ..
             } => {
-                // Reconfigure the surface with the new size
                 config.width = size.width;
                 config.height = size.height;
                 surface.configure(&device, &config);
-                // On macos the window needs to be redrawn manually after resizing
                 window.request_redraw();
             }
             Event::RedrawRequested(_) => {
@@ -214,13 +207,12 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
                 };
 
                 transform.rotation *= quat;
-                camera.fovy = 180.0 * t.sin();
 
-                let transfered_mesh = mesh.into_gpu(&device, &ctx.queue);
-                let transfered_mat = mat.material(&device, &ctx.queue);
-                let transfered_trans = transform.into_gpu(&device, &ctx.queue);
-                let transfered_camera = camera.into_gpu(&device, &ctx.queue);
-                let transfered_lights = lights.into_gpu(&device, &ctx.queue);
+                let transfered_mesh = mesh.into_gpu(&device, ctx.queue);
+                let transfered_mat = mat.material(&device, ctx.queue);
+                let transfered_trans = transform.into_gpu(&device, ctx.queue);
+                let transfered_camera = camera.into_gpu(&device, ctx.queue);
+                let transfered_lights = lights.into_gpu(&device, ctx.queue);
 
                 let obj = Renderable::new(vec![transfered_mesh], transfered_mat, transfered_trans);
 

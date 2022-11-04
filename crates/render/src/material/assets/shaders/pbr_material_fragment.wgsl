@@ -141,6 +141,7 @@ fn fragment(vertex: VertexOutput) -> @location(0) vec4<f32> {
     let V = normalize(camera_pos - vertex.world_pos.xyz);
 
     let texture_color = textureSample(texture, texture_sampler, vertex.tex_coord);
+    // let texture_color = vec4<f32>(1.0);
     let albedo = (base_color * texture_color).xyz;
 
     var F0 = vec3<f32>(0.04);

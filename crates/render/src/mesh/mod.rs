@@ -9,7 +9,7 @@ use crate::renderable::gpu::IntoGpu;
 use super::prelude::{IndexBuffer, VertexBuffer, VertexDesc};
 
 #[repr(C)]
-#[derive(Copy, Clone, Pod, Zeroable)]
+#[derive(Copy, Clone, Pod, Zeroable, Debug)]
 pub struct MeshVertex {
     pub position: [f32; 3],
     pub texcoords: [f32; 2],
@@ -59,17 +59,18 @@ impl VertexDesc for MeshVertex {
     }
 }
 
+#[derive(Debug)]
 pub struct Mesh {
-    verticies: Vec<MeshVertex>,
+    vertices: Vec<MeshVertex>,
     // TODO: decide if it's always a u32
-    indicies: Option<Vec<u32>>,
+    indices: Option<Vec<u32>>,
 }
 
 impl Mesh {
     pub fn new(verticies: Vec<MeshVertex>, indicies: Option<Vec<u32>>) -> Self {
         Self {
-            verticies,
-            indicies,
+            vertices: verticies,
+            indices: indicies,
         }
     }
 }
@@ -78,9 +79,9 @@ impl IntoGpu for Mesh {
     type Item = GpuMesh;
 
     fn into_gpu(&self, device: &wgpu::Device, _queue: &wgpu::Queue) -> Self::Item {
-        let vertex_buffer = VertexBuffer::new(device, &self.verticies, Some("Vertex buffer"));
+        let vertex_buffer = VertexBuffer::new(device, &self.vertices, Some("Vertex buffer"));
         let index_buffer = self
-            .indicies
+            .indices
             .as_ref()
             .map(|i| IndexBuffer::new(device, &i, Some("Index buffer")));
 

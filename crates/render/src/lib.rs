@@ -35,9 +35,11 @@ pub mod prelude {
         DepthStencilAttachmentDescriptorBuilder,
     };
     pub use super::render_pipleine_builder::RenderPipelineBuilder;
+    pub use super::renderable::Renderable;
     pub use super::renderer::RenderingContext;
     pub use super::shader::Shader;
     pub use super::texture::Texture;
     pub use super::transform::Transform;
     pub use glam::{Mat2, Mat3, Mat4, Quat, Vec2, Vec3, Vec4};
+    pub use wgpu::{Device, Extent3d, Queue, TextureFormat};
 }

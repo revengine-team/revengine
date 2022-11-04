@@ -10,6 +10,7 @@ use wgpu::{
 };
 
 /// Represents an image that has been uploaded to the GPU.
+#[derive(Debug)]
 pub struct Texture {
     /// Texture on the GPU
     pub tex: wgpu::Texture,
@@ -36,7 +37,8 @@ impl Texture {
         address_mode: Option<wgpu::AddressMode>,
         // TODO: make this return Result
     ) -> Self {
-        let format = match image {
+        // FIXME
+        let _format = match image {
             DynamicImage::ImageLuma8(_) => wgpu::TextureFormat::R8Unorm,
             DynamicImage::ImageRgba8(_) => wgpu::TextureFormat::Rgba8UnormSrgb,
             _ => panic!("unsupported format"),
@@ -45,7 +47,8 @@ impl Texture {
         // TODO: clear this
         let buffer = image.as_flat_samples_u8().unwrap();
 
-        let bytes_per_pixel = u32::from(buffer.layout.channels);
+        // FIXME
+        let _bytes_per_pixel = u32::from(buffer.layout.channels);
 
         let size = Extent3d {
             width: image.width(),
@@ -53,7 +56,29 @@ impl Texture {
             depth_or_array_layers: 1,
         };
 
-        let tex = device.create_texture(&Self::default_descriptor(size, format));
+        Self::from_bytes(
+            device,
+            queue,
+            buffer.as_slice(),
+            &size,
+            filter_method,
+            address_mode,
+        )
+    }
+
+    pub fn from_bytes(
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+        data: &[u8],
+        size: &Extent3d,
+        filter_method: Option<wgpu::FilterMode>,
+        address_mode: Option<wgpu::AddressMode>,
+    ) -> Self {
+        let tex = device.create_texture(&Self::default_descriptor(
+            *size,
+            // FIXME: format
+            TextureFormat::Rgba8UnormSrgb,
+        ));
 
         queue.write_texture(
             wgpu::ImageCopyTexture {
@@ -62,30 +87,34 @@ impl Texture {
                 origin: wgpu::Origin3d::ZERO,
                 aspect: wgpu::TextureAspect::All,
             },
-            buffer.as_slice(),
+            data,
             wgpu::ImageDataLayout {
                 offset: 0,
-                bytes_per_row: NonZeroU32::new(image.width() * bytes_per_pixel),
-                rows_per_image: NonZeroU32::new(image.height()),
+                bytes_per_row: NonZeroU32::new(size.width * 4),
+                rows_per_image: NonZeroU32::new(size.height),
             },
             Extent3d {
-                width: image.width(),
-                height: image.height(),
+                width: size.width,
+                height: size.height,
                 depth_or_array_layers: 1,
             },
         );
 
         let sampler_info = Self::default_sampler_descriptor(address_mode, filter_method);
 
-        let view = tex.create_view(&Self::default_view_descriptor(format));
+        let view = tex.create_view(&Self::default_view_descriptor(
+            // FIXME: format
+            TextureFormat::Rgba8UnormSrgb,
+        ));
 
         // TODO: wrap in Result
         Self {
             tex,
             view,
             sampler: device.create_sampler(&sampler_info),
-            _size: size,
-            _format: format,
+            _size: *size,
+            // FIXME: format
+            _format: TextureFormat::Rgba8UnormSrgb,
         }
     }
 
